@@ -14,14 +14,22 @@ export function Picker({ initial, recent }: { initial: EngineState; recent: Save
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<Notice>(null);
   const latest = useRef(0);
+  // answers including clicks the server hasn't confirmed yet, so quick successive clicks aren't lost
+  const pending = useRef<Selections>(initial.selections);
 
   async function refresh(selections: Selections) {
     const n = ++latest.current;
+    pending.current = selections;
     setBusy(true);
     const res = await fetch("/api/options", { method: "POST", body: JSON.stringify({ selections }) });
     if (n !== latest.current) return; // a newer change is in flight
     setBusy(false);
-    if (res.ok) setState(await res.json());
+    if (res.ok) {
+      const next: EngineState = await res.json();
+      if (n !== latest.current) return;
+      pending.current = next.selections;
+      setState(next);
+    }
   }
 
   function choose(variable: string, option: string) {
@@ -33,7 +41,7 @@ export function Picker({ initial, recent }: { initial: EngineState; recent: Save
         v.key === variable ? { ...v, options: v.options.map((o) => ({ ...o, selected: o.key === option })) } : v,
       ),
     }));
-    void refresh({ ...state.selections, [variable]: option });
+    void refresh({ ...pending.current, [variable]: option });
   }
 
   async function send(selections: Selections) {
