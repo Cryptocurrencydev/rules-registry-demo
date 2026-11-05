@@ -1,4 +1,5 @@
-// Each database rule rejects the invalid row it exists for, with that rule's own name.
+// Database rules reject the invalid rows they exist for, with the rule's own name.
+// The README lists which named rules have a test here and which do not yet.
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Client } from "pg";
 import { attempt, connect, optionId, variableId } from "./helpers";
@@ -78,6 +79,19 @@ describe("constraints reject invalid rows", () => {
       "insert into option_conditions (option_id, required_option_id) values ($1, 999999)",
       [await optionId(c, "carry.umbrella")],
       "option_conditions_required_fk",
+    );
+  });
+
+  it("condition on an option that doesn't exist, or moving an option that has conditions → option_conditions_option_fk", async () => {
+    await rejects(
+      "insert into option_conditions (option_id, required_option_id) values (999999, $1)",
+      [await optionId(c, "weather.sunny")],
+      "option_conditions_option_fk",
+    );
+    await rejects(
+      "update options set variable_id = $1 where id = $2",
+      [await variableId(c, "carry"), await optionId(c, "footwear.sandals")],
+      "option_conditions_option_fk",
     );
   });
 

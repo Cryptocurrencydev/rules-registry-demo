@@ -51,6 +51,8 @@ Each rule has a name, so an error tells you exactly which one was broken:
 | `option_conditions_unique` | The same condition entered twice |
 | `sentence_parts_role_valid`, `sentence_settings_single_row` | Unknown sentence roles, a second settings row |
 
+Every rule in this table has at least one automated test. The database has 10 more named rules that don't have a test yet. They're listed under [What each test proves](#what-each-test-proves).
+
 ---
 
 ## How to change the rules
@@ -119,7 +121,11 @@ The tests wipe and rebuild the `rr_test` database from the migrations each run. 
 - The live-preview API never returns or composes a disallowed option, even if one is sent to it.
 - A valid set of answers is saved with exactly the sentence shown.
 
-**`tests/constraints.test.ts`: every database rule rejects the bad row it exists for.** Each test inserts one invalid row and checks the database refused it *with that specific rule's name* (see the table above). It also checks that a condition's question can't be faked by editing it directly.
+**`tests/constraints.test.ts`: 13 of the database's 23 named rules are tested.** Each test tries one invalid change and checks the database refused it *with that specific rule's name*. It also checks that a condition's question can't be faked by editing it directly.
+
+- **Tested (13):** every rule in the table above, which is `options_fragment_not_empty`, `options_key_unique_per_variable`, `variables_sort_order_min`, `options_sort_order_min`, `sentence_parts_position_min`, `option_conditions_not_self_variable`, `option_conditions_required_earlier`, `options_variable_fk`, `option_conditions_option_fk`, `option_conditions_required_fk`, `option_conditions_unique`, `sentence_parts_role_valid` and `sentence_settings_single_row`.
+- **Not tested yet (10):** `variables_key_unique`, `variables_key_format`, `variables_label_not_empty`, `variables_sort_order_unique`, `options_key_format`, `options_label_not_empty`, `options_id_variable_unique`, `sentence_parts_variable_fk`, `sentence_parts_position_unique` and `submissions_sentence_not_empty`. These rules are active in the database, but no automated test proves it.
+- **Partly tested:** `option_conditions_required_earlier` is tested when a condition is added and when questions are re-ordered. Editing an existing condition so it points at a later question isn't tested.
 
 **`tests/compose.test.ts`: sentences come out exactly as expected.** Six answer combinations are checked word for word against the real database. The pure function is also shown to follow the stored order rather than input order, to be deterministic, and to change its output when only the data changes.
 
